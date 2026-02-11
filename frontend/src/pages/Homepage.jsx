@@ -56,7 +56,7 @@ function Homepage() {
       {/* Navigation Bar */}
       <nav className="navbar bg-base-100 shadow-lg px-4">
         <div className="flex-1">
-          <NavLink to="/" className="btn btn-ghost text-xl">LeetCode</NavLink>
+          <NavLink to="/" className="btn btn-ghost text-xl">AlgoHub</NavLink>
         </div>
         <div className="flex-none gap-4">
           <div className="dropdown dropdown-end">
@@ -109,7 +109,7 @@ function Homepage() {
           </select>
         </div>
 
-        {/* Problems List */}
+        
         <div className="grid gap-4">
           {filteredProblems.map(problem => (
             <div key={problem._id} className="card bg-base-100 shadow-xl">
