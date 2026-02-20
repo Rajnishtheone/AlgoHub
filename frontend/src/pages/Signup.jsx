@@ -36,67 +36,94 @@ function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-base-200"> {/* Added a light bg for contrast */}
-      <div className="card w-96 bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title justify-center text-3xl mb-6">AlgoHub</h2> {/* Added mb-6 for spacing */}
+    <div className="auth-sky flex items-center justify-center p-6">
+      <div className="auth-card grid md:grid-cols-2">
+        <div className="auth-panel p-8 md:p-12 flex flex-col items-center justify-center text-center gap-6">
+          <div className="text-xs tracking-[0.35em] uppercase">AlgoHub</div>
+          <div className="auth-rocket w-40 h-40">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <defs>
+                <linearGradient id="rocketGlowSignup" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#8cf2ff" />
+                  <stop offset="100%" stopColor="#7c4dff" />
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="70" fill="rgba(255,255,255,0.08)" />
+              <path d="M100 30c24 20 36 46 36 78 0 32-12 58-36 78-24-20-36-46-36-78 0-32 12-58 36-78z" fill="#f5f1ff" />
+              <circle cx="100" cy="90" r="17" fill="#3b1c6e" />
+              <circle cx="100" cy="90" r="8" fill="#8cf2ff" />
+              <path d="M68 132l-24 20c-6 5-8 11-6 18 8-5 18-7 30-5l10-33z" fill="#e7dcff" />
+              <path d="M132 132l24 20c6 5 8 11 6 18-8-5-18-7-30-5l-10-33z" fill="#e7dcff" />
+              <path className="rocket-flame" d="M92 152h16l-8 24z" fill="url(#rocketGlowSignup)" />
+              <circle className="rocket-spark" cx="88" cy="176" r="2.5" fill="#b9f7ff" />
+              <circle className="rocket-spark" cx="114" cy="180" r="2" fill="#9b7dff" />
+            </svg>
+          </div>
+          <div className="auth-code">
+            <span className="code-line">const path = optimalRoute(grid);</span>
+            <span className="code-line delay-1">return path.length &gt; 0;</span>
+            <span className="code-line delay-2">// keep iterating</span>
+          </div>
+          <div className="auth-motto">Practice your code. Learn more. Grow fast.</div>
+          <div>
+            <h3 className="text-xl font-semibold mb-2">Start your journey</h3>
+            <p className="text-sm text-white/80">
+              Join AlgoHub and start shipping clean solutions today.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-8 md:p-12">
+          <h2 className="text-2xl font-bold text-slate-900">Create account</h2>
+          <p className="text-sm text-slate-500 mt-2">Sign up to unlock your problem set.</p>
 
           {error && (
-            <div className="alert alert-error mb-4">
+            <div className="alert alert-error mt-6">
               <span>{error}</span>
             </div>
           )}
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* First Name Field */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">First Name</span>
-              </label>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
+            <div>
+              <label className="auth-label">First Name</label>
               <input
                 type="text"
                 placeholder="John"
-                className={`input input-bordered w-full ${errors.firstName ? 'input-error' : ''}`} 
+                className={`auth-input ${errors.firstName ? 'auth-input-error' : ''}`}
                 {...register('firstName')}
               />
               {errors.firstName && (
-                <span className="text-error text-sm mt-1">{errors.firstName.message}</span>
+                <span className="text-error text-sm mt-2 block">{errors.firstName.message}</span>
               )}
             </div>
 
-            {/* Email Field */}
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Email</span>
-              </label>
+            <div>
+              <label className="auth-label">Email</label>
               <input
                 type="email"
                 placeholder="john@example.com"
-                className={`input input-bordered w-full ${errors.emailId ? 'input-error' : ''}`} // Ensure w-full for consistency
+                className={`auth-input ${errors.emailId ? 'auth-input-error' : ''}`}
                 {...register('emailId')}
               />
               {errors.emailId && (
-                <span className="text-error text-sm mt-1">{errors.emailId.message}</span>
+                <span className="text-error text-sm mt-2 block">{errors.emailId.message}</span>
               )}
             </div>
 
-            {/* Password Field with Toggle */}
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Password</span>
-              </label>
+            <div>
+              <label className="auth-label">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="********"
-                  // Added pr-10 (padding-right) to make space for the button
-                  className={`input input-bordered w-full pr-10 ${errors.password ? 'input-error' : ''}`}
+                  className={`auth-input pr-10 ${errors.password ? 'auth-input-error' : ''}`}
                   {...register('password')}
                 />
                 <button
                   type="button"
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-base-content/60 hover:text-base-content" // Added transform for better centering, styling
+                  className="absolute top-1/2 right-1 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"} // Accessibility
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,31 +138,26 @@ function Signup() {
                 </button>
               </div>
               {errors.password && (
-                <span className="text-error text-sm mt-1">{errors.password.message}</span>
+                <span className="text-error text-sm mt-2 block">{errors.password.message}</span>
               )}
             </div>
 
-            {/* Submit Button */}
-            <div className="form-control mt-8 flex justify-center"> 
+            <div className="flex items-center justify-between">
               <button
                 type="submit"
-                className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                className={`auth-btn ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 disabled={loading}
               >
                 {loading ? 'Signing Up...' : 'Sign Up'}
               </button>
+              <span className="text-sm text-slate-500">
+                Already have an account?{' '}
+                <NavLink to="/login" className="auth-link">
+                  Login
+                </NavLink>
+              </span>
             </div>
           </form>
-
-          {/* Login Redirect */}
-          <div className="text-center mt-6"> {/* Increased mt for spacing */}
-            <span className="text-sm">
-              Already have an account?{' '}
-              <NavLink to="/login" className="link link-primary">
-                Login
-              </NavLink>
-            </span>
-          </div>
         </div>
       </div>
     </div>

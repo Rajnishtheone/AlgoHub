@@ -55,9 +55,18 @@ const ProblemPage = () => {
         const saved = localStorage.getItem(getDraftKey(problemId, selectedLanguage));
         const initialFullCode = getFullCode(response.data, selectedLanguage);
         const extracted = extractVisibleCode(initialFullCode);
-        const codeToSet = extracted.error
-          ? ''
-          : (saved && saved.length > 0 ? saved : extracted.visible);
+        let codeToSet = extracted.error ? '' : extracted.visible;
+
+        if (saved && saved.length > 0 && !extracted.error) {
+          const looksLikeFull =
+            saved.includes("VISIBLE_CODE_START") ||
+            saved.includes("VISIBLE_CODE_END") ||
+            saved.startsWith(extracted.normalized.slice(0, extracted.start)) ||
+            saved.endsWith(extracted.normalized.slice(extracted.end));
+          if (!looksLikeFull) {
+            codeToSet = saved;
+          }
+        }
 
         setProblem(response.data);
         setFullCode(initialFullCode);
@@ -80,9 +89,18 @@ const ProblemPage = () => {
       const saved = localStorage.getItem(getDraftKey(problemId, selectedLanguage));
       const initialFullCode = getFullCode(problem, selectedLanguage);
       const extracted = extractVisibleCode(initialFullCode);
-      const codeToSet = extracted.error
-        ? ''
-        : (saved && saved.length > 0 ? saved : extracted.visible);
+      let codeToSet = extracted.error ? '' : extracted.visible;
+
+      if (saved && saved.length > 0 && !extracted.error) {
+        const looksLikeFull =
+          saved.includes("VISIBLE_CODE_START") ||
+          saved.includes("VISIBLE_CODE_END") ||
+          saved.startsWith(extracted.normalized.slice(0, extracted.start)) ||
+          saved.endsWith(extracted.normalized.slice(extracted.end));
+        if (!looksLikeFull) {
+          codeToSet = saved;
+        }
+      }
       setFullCode(initialFullCode);
       setMarkerError(extracted.error || '');
       setCode(codeToSet);

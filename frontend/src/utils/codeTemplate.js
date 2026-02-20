@@ -1,6 +1,16 @@
-const MARKER_START_RE = /^\s*(\/\/|#)\s*VISIBLE_CODE_START\b.*$/;
-const MARKER_END_RE = /^\s*(\/\/|#)\s*VISIBLE_CODE_END\b.*$/;
+const MARKER_START = "VISIBLE_CODE_START";
+const MARKER_END = "VISIBLE_CODE_END";
 const MARKER_ERROR = "comment marker issue";
+
+const isMarkerLine = (line, marker) => {
+  const markerIndex = line.indexOf(marker);
+  if (markerIndex === -1) return false;
+  const slashIndex = line.indexOf("//");
+  const hashIndex = line.indexOf("#");
+  if (slashIndex !== -1 && slashIndex < markerIndex) return true;
+  if (hashIndex !== -1 && hashIndex < markerIndex) return true;
+  return false;
+};
 
 const extractVisibleCode = (template) => {
   if (!template) return { error: MARKER_ERROR };
@@ -10,11 +20,11 @@ const extractVisibleCode = (template) => {
   let endLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
-    if (startLine === -1 && MARKER_START_RE.test(lines[i])) {
+    if (startLine === -1 && isMarkerLine(lines[i], MARKER_START)) {
       startLine = i;
       continue;
     }
-    if (startLine !== -1 && MARKER_END_RE.test(lines[i])) {
+    if (startLine !== -1 && isMarkerLine(lines[i], MARKER_END)) {
       endLine = i;
       break;
     }
