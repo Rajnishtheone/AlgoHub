@@ -1,104 +1,63 @@
-import { useState, useRef, useEffect } from 'react';
-import { Pause, Play } from 'lucide-react';
+const getYouTubeId = (url) => {
+  if (!url) return '';
+  const patterns = [
+    /youtu\.be\/([a-zA-Z0-9_-]{6,})/i,
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{6,})/i,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{6,})/i
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return '';
+};
 
+const resolveVideoUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('/uploads/')) {
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    return `${base}${url}`;
+  }
+  return url;
+};
 
+const Editorial = ({ secureUrl, thumbnailUrl, videoSourceType, youtubeUrl }) => {
+  const resolvedUrl = resolveVideoUrl(secureUrl);
+  const youtubeId = videoSourceType === 'youtube' ? getYouTubeId(youtubeUrl) : '';
 
-const Editorial = ({ secureUrl, thumbnailUrl, duration }) => {
+  if (!resolvedUrl && !youtubeId) {
+    return (
+      <div className="bg-base-200 border border-base-300 rounded-xl p-6 text-sm text-base-content/60">
+        No video solution has been added yet.
+      </div>
+    );
+  }
 
-
-  const videoRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isHovering, setIsHovering] = useState(false);
-
-  // Format seconds to MM:SS
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  // Update current time during playback
-  useEffect(() => {
-    const video = videoRef.current;
-    
-    const handleTimeUpdate = () => {
-      if (video) setCurrentTime(video.currentTime);
-    };
-    
-    if (video) {
-      video.addEventListener('timeupdate', handleTimeUpdate);
-      return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-    }
-  }, []);
-
-  return (
-    <div 
-      className="relative w-full max-w-2xl mx-auto rounded-xl overflow-hidden shadow-lg"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        src={secureUrl}
-        poster={thumbnailUrl}
-        onClick={togglePlayPause}
-        className="w-full aspect-video bg-black cursor-pointer"
-      />
-      
-      {/* Video Controls Overlay */}
-      <div 
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 transition-opacity ${
-          isHovering || !isPlaying ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlayPause}
-          className="btn btn-circle btn-primary mr-3"
-          aria-label={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? (
-            <Pause/>
-          ) : (
-            <Play/>
-          )}
-        </button>
-        
-        {/* Progress Bar */}
-        <div className="flex items-center w-full mt-2">
-          <span className="text-white text-sm mr-2">
-            {formatTime(currentTime)}
-          </span>
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            value={currentTime}
-            onChange={(e) => {
-              if (videoRef.current) {
-                videoRef.current.currentTime = Number(e.target.value);
-              }
-            }}
-            className="range range-primary range-xs flex-1"
+  if (youtubeId) {
+    return (
+      <div className="relative w-full max-w-3xl mx-auto rounded-xl overflow-hidden shadow-lg border border-base-300">
+        <div className="aspect-video bg-black">
+          <iframe
+            title="Video Solution"
+            className="w-full h-full"
+            src={`https://www.youtube.com/embed/${youtubeId}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
-          <span className="text-white text-sm ml-2">
-            {formatTime(duration)}
-          </span>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full max-w-3xl mx-auto rounded-xl overflow-hidden shadow-lg border border-base-300 bg-black">
+      <video
+        src={resolvedUrl}
+        poster={thumbnailUrl || undefined}
+        controls
+        preload="metadata"
+        className="w-full aspect-video bg-black"
+      />
     </div>
   );
 };

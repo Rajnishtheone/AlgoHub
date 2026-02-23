@@ -4,10 +4,11 @@ import axiosClient from "../utils/axiosClient";
 import { Send } from 'lucide-react';
 
 function ChatAi({problem}) {
-    const [messages, setMessages] = useState([
+    const initialMessages = [
         { role: 'model', parts:[{text: "Hi, How are you"}]},
         { role: 'user', parts:[{text: "I am Good"}]}
-    ]);
+    ];
+    const [messages, setMessages] = useState(initialMessages);
 
     const { register, handleSubmit, reset,formState: {errors} } = useForm();
     const messagesEndRef = useRef(null);
@@ -62,7 +63,7 @@ function ChatAi({problem}) {
                 onSubmit={handleSubmit(onSubmit)} 
                 className="sticky bottom-0 p-4 bg-base-100 border-t"
             >
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                     <input 
                         placeholder="Ask me anything" 
                         className="input input-bordered flex-1" 
@@ -74,6 +75,13 @@ function ChatAi({problem}) {
                         disabled={errors.message}
                     >
                         <Send size={20} />
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setMessages(initialMessages)}
+                    >
+                        Clear Chat
                     </button>
                 </div>
             </form>

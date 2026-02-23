@@ -1,4 +1,7 @@
 const cloudinary = require('cloudinary').v2;
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const Problem = require("../models/problem");
 const User = require("../models/user");
 const SolutionVideo = require("../models/solutionVideo");
@@ -9,6 +12,59 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const uploadsRoot = path.join(__dirname, '..', '..', 'uploads', 'videos');
+
+const ensureUploadDir = () => {
+  if (!fs.existsSync(uploadsRoot)) {
+    fs.mkdirSync(uploadsRoot, { recursive: true });
+  }
+};
+
+const removeLocalFile = (filePath) => {
+  if (!filePath) return;
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error('Failed to remove local video:', err);
+  }
+};
+
+const cleanupExistingVideo = async (existing) => {
+  if (!existing) return;
+  if (existing.sourceType === 'cloudinary' && existing.cloudinaryPublicId) {
+    await cloudinary.uploader.destroy(existing.cloudinaryPublicId, { resource_type: 'video', invalidate: true });
+  }
+  if (existing.sourceType === 'local' && existing.localPath) {
+    removeLocalFile(existing.localPath);
+  }
+};
+
+const localVideoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    ensureUploadDir();
+    cb(null, uploadsRoot);
+  },
+  filename: (req, file, cb) => {
+    const { problemId } = req.params;
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, `${problemId}_${Date.now()}_${safeName}`);
+  }
+});
+
+const localVideoUpload = multer({
+  storage: localVideoStorage,
+  limits: { fileSize: 500 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('video/')) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Only video files are allowed'));
+  }
 });
 
 const generateUploadSignature = async (req, res) => {
@@ -75,16 +131,8 @@ const saveVideoMetadata = async (req, res) => {
       return res.status(400).json({ error: 'Video not found on Cloudinary' });
     }
 
-    // Check if video already exists for this problem and user
-    const existingVideo = await SolutionVideo.findOne({
-      problemId,
-      userId,
-      cloudinaryPublicId
-    });
-
-    if (existingVideo) {
-      return res.status(409).json({ error: 'Video already exists' });
-    }
+    const existingVideo = await SolutionVideo.findOne({ problemId });
+    await cleanupExistingVideo(existingVideo);
 
     // const thumbnailUrl = cloudinary.url(cloudinaryResource.public_id, {
     // resource_type: 'image',  
@@ -100,14 +148,24 @@ const saveVideoMetadata = async (req, res) => {
 
 // https://cloudinary.com/documentation/video_effects_and_enhancements#video_thumbnails
     // Create video solution record
-    const videoSolution = await SolutionVideo.create({
-      problemId,
-      userId,
-      cloudinaryPublicId,
-      secureUrl,
-      duration: cloudinaryResource.duration || duration,
-      thumbnailUrl
-    });
+    const videoSolution = await SolutionVideo.findOneAndUpdate(
+      { problemId },
+      {
+        $set: {
+          problemId,
+          userId,
+          sourceType: 'cloudinary',
+          cloudinaryPublicId,
+          secureUrl,
+          duration: cloudinaryResource.duration || duration || 0,
+          thumbnailUrl,
+          youtubeUrl: '',
+          localPath: '',
+          originalName: ''
+        }
+      },
+      { new: true, upsert: true }
+    );
 
 
     res.status(201).json({
@@ -126,6 +184,113 @@ const saveVideoMetadata = async (req, res) => {
   }
 };
 
+const saveYoutubeLink = async (req, res) => {
+  try {
+    const { problemId, youtubeUrl } = req.body;
+    const userId = req.result._id;
+
+    if (!problemId || !youtubeUrl) {
+      return res.status(400).json({ error: 'problemId and youtubeUrl are required' });
+    }
+
+    const problem = await Problem.findById(problemId);
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    const existingVideo = await SolutionVideo.findOne({ problemId });
+    await cleanupExistingVideo(existingVideo);
+
+    const videoSolution = await SolutionVideo.findOneAndUpdate(
+      { problemId },
+      {
+        $set: {
+          problemId,
+          userId,
+          sourceType: 'youtube',
+          youtubeUrl,
+          thumbnailUrl: '',
+          duration: 0
+        },
+        $unset: {
+          secureUrl: 1,
+          cloudinaryPublicId: 1,
+          localPath: 1,
+          originalName: 1
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    return res.status(201).json({
+      message: 'YouTube solution saved successfully',
+      videoSolution: {
+        id: videoSolution._id,
+        youtubeUrl: videoSolution.youtubeUrl,
+        uploadedAt: videoSolution.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error saving YouTube link:', error);
+    return res.status(500).json({ error: 'Failed to save YouTube link' });
+  }
+};
+
+const uploadLocalVideo = async (req, res) => {
+  try {
+    const { problemId } = req.params;
+    const userId = req.result._id;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'Video file is required' });
+    }
+
+    const problem = await Problem.findById(problemId);
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    const existingVideo = await SolutionVideo.findOne({ problemId });
+    await cleanupExistingVideo(existingVideo);
+
+    const publicUrl = `/uploads/videos/${file.filename}`;
+
+    const videoSolution = await SolutionVideo.findOneAndUpdate(
+      { problemId },
+      {
+        $set: {
+          problemId,
+          userId,
+          sourceType: 'local',
+          secureUrl: publicUrl,
+          localPath: file.path,
+          originalName: file.originalname,
+          youtubeUrl: '',
+          thumbnailUrl: '',
+          duration: 0
+        },
+        $unset: {
+          cloudinaryPublicId: 1
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    return res.status(201).json({
+      message: 'Local video saved successfully',
+      videoSolution: {
+        id: videoSolution._id,
+        secureUrl: videoSolution.secureUrl,
+        uploadedAt: videoSolution.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error saving local video:', error);
+    return res.status(500).json({ error: 'Failed to save local video' });
+  }
+};
+
 
 const deleteVideo = async (req, res) => {
   try {
@@ -140,7 +305,12 @@ const deleteVideo = async (req, res) => {
       return res.status(404).json({ error: 'Video not found' });
     }
 
-    await cloudinary.uploader.destroy(video.cloudinaryPublicId, { resource_type: 'video' , invalidate: true });
+    if (video.sourceType === 'cloudinary' && video.cloudinaryPublicId) {
+      await cloudinary.uploader.destroy(video.cloudinaryPublicId, { resource_type: 'video' , invalidate: true });
+    }
+    if (video.sourceType === 'local' && video.localPath) {
+      removeLocalFile(video.localPath);
+    }
 
     res.json({ message: 'Video deleted successfully' });
 
@@ -150,4 +320,4 @@ const deleteVideo = async (req, res) => {
   }
 };
 
-module.exports = {generateUploadSignature,saveVideoMetadata,deleteVideo};
+module.exports = {generateUploadSignature,saveVideoMetadata,deleteVideo,saveYoutubeLink,uploadLocalVideo,localVideoUpload};

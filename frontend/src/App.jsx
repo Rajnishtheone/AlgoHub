@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 import Layout from "./components/Layout";
 import Profile from "./pages/Profile";
+import Roadmap from "./pages/Roadmap";
 
 function App(){
   
@@ -51,6 +52,7 @@ function App(){
         <Route path="/admin/upload/:problemId" element={<ProtectedRoute requireAdmin><AdminUpload /></ProtectedRoute>} />
         <Route path="/problem/:problemId" element={<ProtectedRoute><ProblemPage/></ProtectedRoute>}></Route>
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
       </Route>
     </Routes>
   </>

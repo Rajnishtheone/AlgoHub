@@ -24,6 +24,7 @@ const getFullCode = (problemData, language) => {
   return entry?.initialCode || '';
 };
 
+const normalizeTags = (tags) => (Array.isArray(tags) ? tags : tags ? [tags] : []);
 
 
 const ProblemPage = () => {
@@ -294,7 +295,13 @@ const ProblemPage = () => {
                     <div className={`badge badge-outline ${getDifficultyColor(problem.difficulty)}`}>
                       {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                     </div>
-                    <div className="badge badge-primary">{problem.tags}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {normalizeTags(problem.tags).map((tag, idx) => (
+                        <div key={`${problem._id}-tag-${idx}`} className="badge badge-primary">
+                          {tag}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="prose max-w-none">
@@ -302,6 +309,35 @@ const ProblemPage = () => {
                       {problem.description}
                     </div>
                   </div>
+
+                  {(problem.constraints || problem.inputFormat || problem.outputFormat) && (
+                    <div className="mt-6 space-y-4">
+                      {problem.constraints && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Constraints</h3>
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {problem.constraints}
+                          </div>
+                        </div>
+                      )}
+                      {problem.inputFormat && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Input Format</h3>
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {problem.inputFormat}
+                          </div>
+                        </div>
+                      )}
+                      {problem.outputFormat && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Output Format</h3>
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {problem.outputFormat}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Examples:</h3>
@@ -325,7 +361,12 @@ const ProblemPage = () => {
                 <div className="prose max-w-none">
                   <h2 className="text-xl font-bold mb-4">Editorial</h2>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    <Editorial secureUrl={problem.secureUrl} thumbnailUrl={problem.thumbnailUrl} duration={problem.duration}/>
+                    <Editorial
+                      secureUrl={problem.secureUrl}
+                      thumbnailUrl={problem.thumbnailUrl}
+                      videoSourceType={problem.videoSourceType}
+                      youtubeUrl={problem.youtubeUrl}
+                    />
                   </div>
                 </div>
               )}
