@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast';
 
 // Update Problem Page shows a list of problems, admin selects a problem to update then redirect to AdminUpdateProblem
 
+const formatTags = (tags) => (Array.isArray(tags) ? tags.join(', ') : tags);
+
 const AdminUpdate = () => {
     const [problems, setProblems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ const AdminUpdate = () => {
                 </td>
                 <td>
                   <span className="badge badge-outline">
-                    {problem.tags}
+                    {formatTags(problem.tags)}
                   </span>
                 </td>
                 <td>

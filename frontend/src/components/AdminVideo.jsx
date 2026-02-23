@@ -3,6 +3,8 @@ import axiosClient from '../utils/axiosClient'
 import { NavLink } from 'react-router';
 import { toast } from 'react-hot-toast';
 
+const formatTags = (tags) => (Array.isArray(tags) ? tags.join(', ') : tags);
+
 const AdminVideo = () => {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ const AdminVideo = () => {
                 </td>
                 <td>
                   <span className="badge badge-outline">
-                    {problem.tags}
+                    {formatTags(problem.tags)}
                   </span>
                 </td>
                 <td>

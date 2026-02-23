@@ -11,6 +11,7 @@ const submitRouter = require("./routes/submit")
 const aiRouter = require("./routes/aiChatting")
 const videoRouter = require("./routes/videoCreator");
 const cors = require('cors')
+const path = require('path');
 
 const {swaggerUi, swaggerSpec } = require('./config/swagger');
 
@@ -23,6 +24,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.use('/user',authRouter);
 app.use('/problem',problemRouter);

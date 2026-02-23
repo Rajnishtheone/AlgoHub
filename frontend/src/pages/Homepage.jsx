@@ -4,6 +4,8 @@ import { useSelector } from 'react-redux';
 import axiosClient from '../utils/axiosClient';
 import { motion } from 'framer-motion';
 
+const normalizeTags = (tags) => (Array.isArray(tags) ? tags : tags ? [tags] : []);
+
 function Homepage() {
   const { user } = useSelector((state) => state.auth);
   const [problems, setProblems] = useState([]);
@@ -53,7 +55,8 @@ function Homepage() {
 
   const filteredProblems = problems.filter(problem => {
     const difficultyMatch = filters.difficulty === 'all' || problem.difficulty === filters.difficulty;
-    const tagMatch = filters.tag === 'all' || problem.tags === filters.tag;
+    const tagList = normalizeTags(problem.tags);
+    const tagMatch = filters.tag === 'all' || tagList.includes(filters.tag);
     const solved = solvedProblems.some(sp => sp._id === problem._id);
     const statusMatch =
       filters.status === 'all' ||
@@ -210,9 +213,11 @@ function Homepage() {
                       <div className={`badge ${getDifficultyBadgeColor(problem.difficulty)}`}>
                         {problem.difficulty}
                       </div>
-                      <div className="badge badge-info badge-outline">
-                        {problem.tags}
-                      </div>
+                      {normalizeTags(problem.tags).map((tag, idx) => (
+                        <div key={`${problem._id}-tag-${idx}`} className="badge badge-info badge-outline">
+                          {tag}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </motion.div>

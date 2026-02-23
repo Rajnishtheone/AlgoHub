@@ -2,19 +2,30 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {problemSchema} from '../schemas/problemSchema';
 import axiosClient from '../utils/axiosClient';
+import axios from 'axios';
 import { useParams } from 'react-router';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
+import AdminProblemAssistant from './AdminProblemAssistant';
 
 function UpdateProblem() {
     const [loading, setLoading] = useState(false);
+    const [videoSource, setVideoSource] = useState('none');
+    const [youtubeUrl, setYoutubeUrl] = useState('');
+    const [localVideoFile, setLocalVideoFile] = useState(null);
+    const [videoSaving, setVideoSaving] = useState(false);
+    const [existingVideo, setExistingVideo] = useState(null);
     let { problemId } = useParams();
     const languages = ['C++', 'Java', 'JavaScript', 'Python'];
 
 
     const normalizeProblem = (problem) => ({
       ...problem,
+      tags: Array.isArray(problem.tags) ? problem.tags : (problem.tags ? [problem.tags] : []),
+      constraints: problem.constraints || "",
+      inputFormat: problem.inputFormat || "",
+      outputFormat: problem.outputFormat || "",
       startCode: languages.map((lang, i) => ({
         language: lang,
         initialCode: problem.startCode?.[i]?.initialCode || ""
@@ -33,10 +44,15 @@ function UpdateProblem() {
         handleSubmit,
         reset,
         getValues,
+        setValue,
         formState: { errors }
     } = useForm({
         resolver: zodResolver(problemSchema),
         defaultValues: {
+        tags: [],
+        constraints: '',
+        inputFormat: '',
+        outputFormat: '',
         visibleTestCases: [{ input: '', output: '', explanation: '' }],
         hiddenTestCases: [{ input: '', output: '' }],
         startCode: [
@@ -57,7 +73,8 @@ function UpdateProblem() {
     const {
         fields: visibleFields,
         append: appendVisible,
-        remove: removeVisible
+        remove: removeVisible,
+        replace: replaceVisible
     } = useFieldArray({
         control,
         name: 'visibleTestCases'
@@ -66,7 +83,8 @@ function UpdateProblem() {
     const {
         fields: hiddenFields,
         append: appendHidden,
-        remove: removeHidden
+        remove: removeHidden,
+        replace: replaceHidden
     } = useFieldArray({
         control,
         name: 'hiddenTestCases'
@@ -76,11 +94,43 @@ function UpdateProblem() {
         console.log('Form data submitted:', data);
         try {
         await axiosClient.put(`/problem/update/${problemId}`, data);
+        await handleVideoSave(problemId);
         toast.success('Problem updated successfully');
         navigate('/');
         } catch (error) {
         toast.error(error.response?.data?.message || error.message || 'Failed to update problem');
         }
+    };
+
+    const handleVideoSave = async (id) => {
+      try {
+        if (videoSource === 'youtube') {
+          if (!youtubeUrl.trim()) return;
+          setVideoSaving(true);
+          await axiosClient.post('/video/youtube', {
+            problemId: id,
+            youtubeUrl: youtubeUrl.trim()
+          });
+          toast.success('YouTube video saved');
+        }
+
+        if (videoSource === 'local') {
+          if (!localVideoFile) return;
+          setVideoSaving(true);
+          const formData = new FormData();
+          formData.append('videoFile', localVideoFile);
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+          await axios.post(`${baseUrl}/video/local/${id}`, formData, {
+            withCredentials: true
+          });
+          toast.success('Local video saved');
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error(err.response?.data?.error || 'Failed to save video');
+      } finally {
+        setVideoSaving(false);
+      }
     };
 
     useEffect(() => {
@@ -93,6 +143,11 @@ function UpdateProblem() {
               const response = await axiosClient.get(`/problem/problemById/${problemId}`);
               console.log(response.data);
               reset(normalizeProblem(response.data));
+              setExistingVideo({
+                sourceType: response.data.videoSourceType || 'none',
+                youtubeUrl: response.data.youtubeUrl || '',
+                secureUrl: response.data.secureUrl || ''
+              });
             } catch (err) {
               toast.error("Failed to fetch problem!");
             } finally {
@@ -117,6 +172,12 @@ function UpdateProblem() {
       console.log(getValues());
     }
   )} className="space-y-6">
+        <AdminProblemAssistant
+          getValues={getValues}
+          setValue={setValue}
+          replaceVisible={replaceVisible}
+          replaceHidden={replaceHidden}
+        />
         {/* Basic Information */}
         <div className="card bg-base-100 shadow-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
@@ -164,18 +225,58 @@ function UpdateProblem() {
 
               <div className="form-control w-1/2">
                 <label className="label">
-                  <span className="label-text">Tag</span>
+                  <span className="label-text">Tags</span>
                 </label>
                 <select
                   {...register('tags')}
-                  className={`select select-bordered ${errors.tags && 'select-error'}`}
+                  multiple
+                  className={`select select-bordered h-32 ${errors.tags && 'select-error'}`}
                 >
                   <option value="array">Array</option>
                   <option value="linkedList">Linked List</option>
                   <option value="graph">Graph</option>
                   <option value="dp">DP</option>
                 </select>
+                <span className="text-xs text-base-content/60 mt-1">
+                  Hold Ctrl (Windows) or Cmd (Mac) to select multiple tags.
+                </span>
               </div>
+            </div>
+            {errors.tags && (
+              <span className="text-error">{errors.tags.message}</span>
+            )}
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Constraints (optional)</span>
+              </label>
+              <textarea
+                {...register('constraints')}
+                className="textarea textarea-bordered h-24"
+                placeholder="e.g., 1 ≤ n ≤ 10^5"
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Input Format (optional)</span>
+              </label>
+              <textarea
+                {...register('inputFormat')}
+                className="textarea textarea-bordered h-24"
+                placeholder="Describe the input format"
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Output Format (optional)</span>
+              </label>
+              <textarea
+                {...register('outputFormat')}
+                className="textarea textarea-bordered h-24"
+                placeholder="Describe the output format"
+              />
             </div>
           </div>
         </div>
@@ -209,10 +310,11 @@ function UpdateProblem() {
                   </button>
                 </div>
                 
-                <input
+                <textarea
                   {...register(`visibleTestCases.${index}.input`)}
                   placeholder="Input"
-                  className="input input-bordered w-full"
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
                 />
                 
                 <input
@@ -258,10 +360,11 @@ function UpdateProblem() {
                   </button>
                 </div>
                 
-                <input
+                <textarea
                   {...register(`hiddenTestCases.${index}.input`)}
                   placeholder="Input"
-                  className="input input-bordered w-full"
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
                 />
                 
                 <input
@@ -326,6 +429,93 @@ function UpdateProblem() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Video Solution */}
+        <div className="card bg-base-100 shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Video Solution</h2>
+
+          {existingVideo?.sourceType && existingVideo.sourceType !== 'none' && (
+            <div className="alert alert-info mb-4">
+              <span>
+                Current video source: {existingVideo.sourceType}
+                {existingVideo.sourceType === 'youtube' && existingVideo.youtubeUrl
+                  ? ` (${existingVideo.youtubeUrl})`
+                  : ''}
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="none"
+                  checked={videoSource === 'none'}
+                  onChange={() => setVideoSource('none')}
+                  className="radio radio-primary"
+                />
+                <span>No change</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="youtube"
+                  checked={videoSource === 'youtube'}
+                  onChange={() => setVideoSource('youtube')}
+                  className="radio radio-primary"
+                />
+                <span>Replace with YouTube link</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="local"
+                  checked={videoSource === 'local'}
+                  onChange={() => setVideoSource('local')}
+                  className="radio radio-primary"
+                />
+                <span>Replace with local upload</span>
+              </label>
+            </div>
+
+            {videoSource === 'youtube' && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">YouTube URL</span>
+                </label>
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="input input-bordered"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+            )}
+
+            {videoSource === 'local' && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Upload local video</span>
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="file-input file-input-bordered"
+                  onChange={(e) => setLocalVideoFile(e.target.files?.[0] || null)}
+                  disabled={videoSaving}
+                />
+                <span className="text-xs text-base-content/60 mt-1">
+                  Max 500MB. Stored locally on the server.
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
