@@ -5,10 +5,10 @@
 [data-theme="brutal"] {
   color-scheme: light;
   --color-base-100: hsl(0 0% 100%);
-  --color-base-200: hsl(220 20% 98%);
-  --color-base-300: hsl(220 18% 94%);
+  --color-base-200: hsl(255 35% 98%);
+  --color-base-300: hsl(255 30% 94%);
   --color-base-content: hsl(220 18% 16%);
-  --color-primary: hsl(210 90% 52%);
+  --color-primary: hsl(142 60% 45%);
   --color-primary-content: hsl(0 0% 100%);
   --color-secondary: hsl(160 60% 45%);
   --color-secondary-content: hsl(0 0% 100%);
@@ -16,7 +16,7 @@
   --color-accent-content: hsl(0 0% 100%);
   --color-neutral: hsl(220 18% 18%);
   --color-neutral-content: hsl(0 0% 98%);
-  --color-info: hsl(200 92% 56%);
+  --color-info: hsl(142 70% 50%);
   --color-info-content: hsl(0 0% 100%);
   --color-success: hsl(158 64% 52%);
   --color-success-content: hsl(0 0% 100%);
@@ -40,7 +40,7 @@
   --color-base-200: hsl(220 16% 16%);
   --color-base-300: hsl(220 14% 20%);
   --color-base-content: hsl(0 0% 96%);
-  --color-primary: hsl(200 90% 60%);
+  --color-primary: hsl(142 65% 50%);
   --color-primary-content: hsl(0 0% 100%);
   --color-secondary: hsl(160 55% 48%);
   --color-secondary-content: hsl(0 0% 100%);
@@ -48,7 +48,7 @@
   --color-accent-content: hsl(0 0% 100%);
   --color-neutral: hsl(220 18% 16%);
   --color-neutral-content: hsl(0 0% 96%);
-  --color-info: hsl(199 89% 58%);
+  --color-info: hsl(142 60% 52%);
   --color-info-content: hsl(220 25% 12%);
   --color-success: hsl(158 64% 52%);
   --color-success-content: hsl(220 25% 12%);
