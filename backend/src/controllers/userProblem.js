@@ -236,6 +236,7 @@ const solvedAllProblembyUser =  async(req,res)=>{
       res.status(500).send("Server Error");
     }
 }
+
 const submittedProblem = async(req,res)=>{
   try{
     const userId = req.result._id;
@@ -254,7 +255,33 @@ const submittedProblem = async(req,res)=>{
   }
 }
 
+const testProblemRefSol = async (req, res) => {
+  try{
+    const {language, refcode, visibleTestCases, hiddenTestCases} = req.body;
 
+    const languageId = getLanguageById(language);
+
+    const submissions = visibleTestCases.map((testcase)=>({
+          source_code:completeCode,
+          language_id: languageId,
+          stdin: testcase.input,
+          expected_output: testcase.output
+      }));
+
+
+    const submitResult = await submitBatch(submissions);
+    console.log(`Submit Result: ${submitResult}`);
+
+    const resultToken = submitResult.map((value)=> value.token);
+    const testResult = await submitToken(resultToken);
+
+    console.log(`Test Result: ${testResult}`);
+
+
+  } catch(err){
+    return res.status(500).send("Internal Server Error")
+  }
+}
 
 
 
