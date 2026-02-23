@@ -53,6 +53,11 @@ function Navbar({ theme, onToggleTheme }) {
                 <NavLink to="/profile">Profile</NavLink>
               </li>
             )}
+            {isAuthenticated && (
+              <li>
+                <NavLink to="/roadmap">Roadmap</NavLink>
+              </li>
+            )}
             {isAuthenticated && user?.role === "admin" && (
               <li>
                 <NavLink to="/admin">Admin</NavLink>
@@ -73,6 +78,11 @@ function Navbar({ theme, onToggleTheme }) {
           {isAuthenticated && (
             <li>
               <NavLink to="/profile">Profile</NavLink>
+            </li>
+          )}
+          {isAuthenticated && (
+            <li>
+              <NavLink to="/roadmap">Roadmap</NavLink>
             </li>
           )}
           {isAuthenticated && user?.role === "admin" && (

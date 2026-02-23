@@ -2,15 +2,21 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axiosClient from '../utils/axiosClient';
+import axios from 'axios';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-hot-toast';
+import AdminProblemAssistant from './AdminProblemAssistant';
+import { useState } from 'react';
 
 // Zod schema matching the problem schema
 const problemSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   difficulty: z.enum(['easy', 'medium', 'hard']),
-  tags: z.enum(['array', 'linkedList', 'graph', 'dp']),
+  tags: z.array(z.enum(['array', 'linkedList', 'graph', 'dp'])).min(1, 'At least one tag is required'),
+  constraints: z.string().optional(),
+  inputFormat: z.string().optional(),
+  outputFormat: z.string().optional(),
   visibleTestCases: z.array(
     z.object({
       input: z.string().min(1, 'Input is required'),
@@ -40,14 +46,24 @@ const problemSchema = z.object({
 
 function AdminPanel() {
   const navigate = useNavigate();
+  const [videoSource, setVideoSource] = useState('none');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [localVideoFile, setLocalVideoFile] = useState(null);
+  const [videoSaving, setVideoSaving] = useState(false);
   const {
     register,
     control,
     handleSubmit,
+    setValue,
+    getValues,
     formState: { errors }
   } = useForm({
     resolver: zodResolver(problemSchema),
     defaultValues: {
+      tags: [],
+      constraints: '',
+      inputFormat: '',
+      outputFormat: '',
       visibleTestCases: [{ input: '', output: '', explanation: '' }],
       hiddenTestCases: [{ input: '', output: '' }],
       startCode: [
@@ -68,7 +84,8 @@ function AdminPanel() {
   const {
     fields: visibleFields,
     append: appendVisible,
-    remove: removeVisible
+    remove: removeVisible,
+    replace: replaceVisible
   } = useFieldArray({
     control,
     name: 'visibleTestCases'
@@ -77,7 +94,8 @@ function AdminPanel() {
   const {
     fields: hiddenFields,
     append: appendHidden,
-    remove: removeHidden
+    remove: removeHidden,
+    replace: replaceHidden
   } = useFieldArray({
     control,
     name: 'hiddenTestCases'
@@ -86,11 +104,51 @@ function AdminPanel() {
   const onSubmit = async (data) => {
     console.log('Form data submitted:', data);
     try {
-      await axiosClient.post('/problem/create', data);
+      const response = await axiosClient.post('/problem/create', data);
+      const problemId = response.data?.problemId;
+
+      if (problemId) {
+        await handleVideoSave(problemId);
+      }
       toast.success('Problem created successfully');
       navigate('/');
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || 'Failed to create problem');
+    }
+  };
+
+  const handleVideoSave = async (problemId) => {
+    try {
+      if (videoSource === 'youtube') {
+        if (!youtubeUrl.trim()) {
+          return;
+        }
+        setVideoSaving(true);
+        await axiosClient.post('/video/youtube', {
+          problemId,
+          youtubeUrl: youtubeUrl.trim()
+        });
+        toast.success('YouTube video saved');
+      }
+
+      if (videoSource === 'local') {
+        if (!localVideoFile) {
+          return;
+        }
+        setVideoSaving(true);
+        const formData = new FormData();
+        formData.append('videoFile', localVideoFile);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+        await axios.post(`${baseUrl}/video/local/${problemId}`, formData, {
+          withCredentials: true
+        });
+        toast.success('Local video saved');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Failed to save video');
+    } finally {
+      setVideoSaving(false);
     }
   };
 
@@ -99,6 +157,13 @@ function AdminPanel() {
       <h1 className="text-3xl font-bold mb-6">Create New Problem</h1>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <AdminProblemAssistant
+          getValues={getValues}
+          setValue={setValue}
+          replaceVisible={replaceVisible}
+          replaceHidden={replaceHidden}
+        />
+
         {/* Basic Information */}
         <div className="card bg-base-100 shadow-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
@@ -146,18 +211,58 @@ function AdminPanel() {
 
               <div className="form-control w-1/2">
                 <label className="label">
-                  <span className="label-text">Tag</span>
+                  <span className="label-text">Tags</span>
                 </label>
                 <select
                   {...register('tags')}
-                  className={`select select-bordered ${errors.tags && 'select-error'}`}
+                  multiple
+                  className={`select select-bordered h-32 ${errors.tags && 'select-error'}`}
                 >
                   <option value="array">Array</option>
                   <option value="linkedList">Linked List</option>
                   <option value="graph">Graph</option>
                   <option value="dp">DP</option>
                 </select>
+                <span className="text-xs text-base-content/60 mt-1">
+                  Hold Ctrl (Windows) or Cmd (Mac) to select multiple tags.
+                </span>
               </div>
+            </div>
+            {errors.tags && (
+              <span className="text-error">{errors.tags.message}</span>
+            )}
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Constraints (optional)</span>
+              </label>
+              <textarea
+                {...register('constraints')}
+                className="textarea textarea-bordered h-24"
+                placeholder="e.g., 1 ≤ n ≤ 10^5"
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Input Format (optional)</span>
+              </label>
+              <textarea
+                {...register('inputFormat')}
+                className="textarea textarea-bordered h-24"
+                placeholder="Describe the input format"
+              />
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Output Format (optional)</span>
+              </label>
+              <textarea
+                {...register('outputFormat')}
+                className="textarea textarea-bordered h-24"
+                placeholder="Describe the output format"
+              />
             </div>
           </div>
         </div>
@@ -191,10 +296,11 @@ function AdminPanel() {
                   </button>
                 </div>
                 
-                <input
+                <textarea
                   {...register(`visibleTestCases.${index}.input`)}
                   placeholder="Input"
-                  className="input input-bordered w-full"
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
                 />
                 
                 <input
@@ -240,10 +346,11 @@ function AdminPanel() {
                   </button>
                 </div>
                 
-                <input
+                <textarea
                   {...register(`hiddenTestCases.${index}.input`)}
                   placeholder="Input"
-                  className="input input-bordered w-full"
+                  className="textarea textarea-bordered w-full"
+                  rows={3}
                 />
                 
                 <input
@@ -308,6 +415,81 @@ function AdminPanel() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Video Solution */}
+        <div className="card bg-base-100 shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Video Solution</h2>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="none"
+                  checked={videoSource === 'none'}
+                  onChange={() => setVideoSource('none')}
+                  className="radio radio-primary"
+                />
+                <span>No video</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="youtube"
+                  checked={videoSource === 'youtube'}
+                  onChange={() => setVideoSource('youtube')}
+                  className="radio radio-primary"
+                />
+                <span>YouTube link</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="videoSource"
+                  value="local"
+                  checked={videoSource === 'local'}
+                  onChange={() => setVideoSource('local')}
+                  className="radio radio-primary"
+                />
+                <span>Local upload</span>
+              </label>
+            </div>
+
+            {videoSource === 'youtube' && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">YouTube URL</span>
+                </label>
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  className="input input-bordered"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+            )}
+
+            {videoSource === 'local' && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Upload local video</span>
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="file-input file-input-bordered"
+                  onChange={(e) => setLocalVideoFile(e.target.files?.[0] || null)}
+                  disabled={videoSaving}
+                />
+                <span className="text-xs text-base-content/60 mt-1">
+                  Max 500MB. Stored locally on the server.
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

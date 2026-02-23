@@ -35,6 +35,58 @@ JSON Schema:
   "referenceSolution": [{"language": "cpp|java|javascript|python", "completeCode": "string"}]
 }`;
 
+const assistantSystemInstruction = `You are an AI assistant for admin problem creation in a competitive programming platform.
+
+You MUST return a strictly valid JSON object with this exact top-level schema and no markdown:
+{
+  "title": "",
+  "description": "",
+  "difficulty": "",
+  "tags": [],
+  "visibleTestCases": [],
+  "hiddenTestCases": [],
+  "improvements": []
+}
+
+Rules:
+- difficulty must be one of: "easy", "medium", "hard".
+- tags must be an array chosen from: "array", "linkedList", "graph", "dp".
+- visibleTestCases should include objects with: { "input": "", "output": "", "explanation": "" }.
+- hiddenTestCases should include objects with: { "input": "", "output": "" }.
+- improvements must be an array of concise strings.
+- If most fields are empty, generate a complete new problem based on the provided topic (or tags if topic is missing).
+- Never include markdown code fences.
+`;
+
+const formatTestCases = (testCases, includeExplanation = false) => {
+    if (!Array.isArray(testCases) || testCases.length === 0) {
+        return "No test cases provided.";
+    }
+    return testCases
+        .slice(0, 6)
+        .map((testCase, index) => {
+            const input = testCase?.input ?? "";
+            const output = testCase?.output ?? testCase?.expectedOutput ?? "";
+            const explanation = includeExplanation ? (testCase?.explanation ?? "") : "";
+            return `Case ${index + 1}: Input: ${input} Output: ${output}${includeExplanation ? ` Explanation: ${explanation}` : ""}`;
+        })
+        .join("\n");
+};
+
+const formatCodeBlocks = (codeEntries, codeKey) => {
+    if (!Array.isArray(codeEntries) || codeEntries.length === 0) {
+        return "No code provided.";
+    }
+    return codeEntries
+        .map((entry) => {
+            const language = entry?.language ?? "unknown";
+            const code = entry?.[codeKey] ?? "";
+            const trimmed = code.length > 2000 ? `${code.slice(0, 2000)}\n...truncated` : code;
+            return `[${language}]\n${trimmed}`;
+        })
+        .join("\n\n");
+};
+
 
 const improveQuestion = async (req, res) => {
     try {
@@ -163,5 +215,95 @@ const suggestCodeTemplates = async (req, res) => {
     
 }
 
+const problemAssistant = async (req, res) => {
+    try {
+        const {
+            action = "enhance",
+            topic,
+            title,
+            description,
+            difficulty,
+            tags,
+            visibleTestCases,
+            hiddenTestCases,
+            startCode,
+            referenceSolution,
+            constraints,
+            inputFormat,
+            outputFormat
+        } = req.body;
 
-module.exports = {improveQuestion, suggestCodeTemplates}
+        const tagList = Array.isArray(tags) ? tags.join(", ") : (tags || "");
+        const visibleCases = formatTestCases(visibleTestCases, true);
+        const hiddenCases = formatTestCases(hiddenTestCases, false);
+        const startCodeFormatted = formatCodeBlocks(startCode, "initialCode");
+        const referenceSolutionFormatted = formatCodeBlocks(referenceSolution, "completeCode");
+
+        const actionInstruction = action === "testcases"
+            ? `Focus on generating strong visible and hidden test cases (with explanations for visible cases). 
+Leave title/description/difficulty/tags empty unless they are needed for clarity.`
+            : action === "validate"
+                ? `Focus on validation only. Keep title/description/difficulty/tags/testcases empty and put all findings into "improvements".`
+                : `Provide improved suggestions across all fields when possible.`;
+
+        const prompt = `
+You are assisting an admin to improve a coding problem.
+
+ACTION: ${action}
+${actionInstruction}
+
+TOPIC (if creating new): ${topic || "Not provided"}
+
+CURRENT DRAFT:
+Title: ${title || "Not provided"}
+Description: ${description || "Not provided"}
+Difficulty: ${difficulty || "Not provided"}
+Tags: ${tagList || "Not provided"}
+Constraints: ${constraints || "Not provided"}
+Input Format: ${inputFormat || "Not provided"}
+Output Format: ${outputFormat || "Not provided"}
+
+VISIBLE TEST CASES:
+${visibleCases}
+
+HIDDEN TEST CASES:
+${hiddenCases}
+
+STARTER CODE:
+${startCodeFormatted}
+
+REFERENCE SOLUTION:
+${referenceSolutionFormatted}
+
+REQUIREMENTS:
+- Analyze for title clarity, description quality, correct difficulty, missing constraints, edge cases, optimization hints, bugs in starter code, and logical issues in reference solution.
+- Suggest better test cases, especially edge cases.
+- Ensure the JSON schema is strictly followed.
+`;
+
+        const result = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt,
+            config: {
+                systemInstruction: assistantSystemInstruction
+            }
+        });
+
+        const responseText = result.text || "";
+        const cleanJson = responseText.replace(/```json|```/g, "").trim();
+        const suggestions = JSON.parse(cleanJson);
+
+        res.status(200).json({
+            success: true,
+            data: suggestions
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error"
+        });
+    }
+};
+
+
+module.exports = {improveQuestion, suggestCodeTemplates, problemAssistant}

@@ -3,13 +3,15 @@ const aiRouter =  express.Router();
 const userMiddleware = require("../middleware/userMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 const solveDoubt = require('../controllers/solveDoubt');
-const {improveQuestion, suggestCodeTemplates} = require("../controllers/adminAiAssist");
+const {improveQuestion, suggestCodeTemplates, problemAssistant} = require("../controllers/adminAiAssist");
+const { buildRoadmap } = require("../controllers/roadmapAi");
 
 aiRouter.post('/chat', userMiddleware, solveDoubt);
 
 aiRouter.post('/improveqn', improveQuestion);
 aiRouter.post('/suggestCodeTemplates', suggestCodeTemplates);
+aiRouter.post('/problem-assistant', adminMiddleware, problemAssistant);
 
-aiRouter.get('/buildRoadmap', userMiddleware);
+aiRouter.post('/buildRoadmap', userMiddleware, buildRoadmap);
 
 module.exports = aiRouter;

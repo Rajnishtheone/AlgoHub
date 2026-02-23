@@ -16,9 +16,25 @@ const problemSchema = new Schema({
         required:true,
     },
     tags:{
-        type:String,
+        type:[String],
         enum:['array','linkedList','graph','dp'],
-        required:true
+        required:true,
+        validate:{
+            validator:(value)=> Array.isArray(value) && value.length > 0,
+            message:"At least one tag is required"
+        }
+    },
+    constraints:{
+        type:String,
+        default:""
+    },
+    inputFormat:{
+        type:String,
+        default:""
+    },
+    outputFormat:{
+        type:String,
+        default:""
     },
     visibleTestCases:[
         {

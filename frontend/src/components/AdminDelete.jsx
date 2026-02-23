@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import axiosClient from '../utils/axiosClient'
 import { toast } from 'react-hot-toast';
 
+const formatTags = (tags) => (Array.isArray(tags) ? tags.join(', ') : tags);
+
 const AdminDelete = () => {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ const AdminDelete = () => {
                 </td>
                 <td>
                   <span className="badge badge-outline">
-                    {problem.tags}
+                    {formatTags(problem.tags)}
                   </span>
                 </td>
                 <td>

@@ -4,6 +4,20 @@ const User = require("../models/user");
 const Submission = require("../models/submission");
 const SolutionVideo = require("../models/solutionVideo")
 
+const normalizeTags = (tags) => {
+  if (!tags) return [];
+  if (Array.isArray(tags)) {
+    return tags.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+  if (typeof tags === "string") {
+    return tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 const createProblem = async (req,res)=>{
    
   // API request to authenticate user:
@@ -57,12 +71,18 @@ const createProblem = async (req,res)=>{
 
       // We can store it in our DB
 
+    const normalizedTags = normalizeTags(tags);
+
     const userProblem =  await Problem.create({
         ...req.body,
+        tags: normalizedTags,
         problemCreator: req.result._id
       });
 
-      res.status(201).send("Problem Saved Successfully");
+      res.status(201).json({
+        message: "Problem Saved Successfully",
+        problemId: userProblem._id
+      });
     }
     catch(err){
         console.log(err);
@@ -131,7 +151,9 @@ const updateProblem = async (req,res)=>{
     }
 
 
-  const newProblem = await Problem.findByIdAndUpdate(id , {...req.body}, {runValidators:true, new:true});
+  const normalizedTags = normalizeTags(tags);
+
+  const newProblem = await Problem.findByIdAndUpdate(id , {...req.body, tags: normalizedTags}, {runValidators:true, new:true});
    
   res.status(200).send(newProblem);
   }
@@ -171,14 +193,14 @@ const getProblemById = async(req,res)=>{
     if(!id)
       return res.status(400).send("ID is Missing");
 
-    const getProblem = await Problem.findById(id).select('_id title description difficulty tags visibleTestCases hiddenTestCases startCode referenceSolution ');
+    const getProblem = await Problem.findById(id).select('_id title description difficulty tags visibleTestCases hiddenTestCases startCode referenceSolution constraints inputFormat outputFormat ');
    
     // video ka jo bhi url wagera le aao
 
    if(!getProblem)
     return res.status(404).send("Problem is Missing");
 
-   const videos = await SolutionVideo.findOne({problemId:id});
+   const videos = await SolutionVideo.findOne({problemId:id}).sort({createdAt:-1});
 
    if(videos){   
     
@@ -187,6 +209,8 @@ const getProblemById = async(req,res)=>{
     secureUrl:videos.secureUrl,
     thumbnailUrl : videos.thumbnailUrl,
     duration : videos.duration,
+    videoSourceType: videos.sourceType,
+    youtubeUrl: videos.youtubeUrl,
    } 
   
    return res.status(200).send(responseData);

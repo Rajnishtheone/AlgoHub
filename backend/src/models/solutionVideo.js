@@ -12,21 +12,40 @@ const videoSchema = new Schema({
     ref: 'user',
     required: true,
    },
+   sourceType: {
+    type: String,
+    enum: ['cloudinary', 'youtube', 'local'],
+    default: 'cloudinary'
+   },
    cloudinaryPublicId: {
     type: String,
-    required: true,
-    unique: true
+    required: function () {
+      return this.sourceType === 'cloudinary';
+    },
+    unique: true,
+    sparse: true
   },
   secureUrl: {
     type: String,
-    required: true
+    required: function () {
+      return this.sourceType !== 'youtube';
+    }
+  },
+  youtubeUrl: {
+    type: String
+  },
+  localPath: {
+    type: String
+  },
+  originalName: {
+    type: String
   },
   thumbnailUrl: {
     type: String
   },
   duration: {
     type: Number,
-    required: true
+    default: 0
   },
 },{
     timestamps:true
