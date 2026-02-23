@@ -35,48 +35,79 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-base-200"> 
-      <div className="card w-96 bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title justify-center text-3xl mb-6">AlgoHub</h2> {/* Added mb-6 */}
+    <div className="auth-sky flex items-center justify-center p-6">
+      <div className="auth-card grid md:grid-cols-2">
+        <div className="auth-panel p-8 md:p-12 flex flex-col items-center justify-center text-center gap-6">
+          <div className="text-xs tracking-[0.35em] uppercase">AlgoHub</div>
+          <div className="auth-rocket w-40 h-40">
+            <svg viewBox="0 0 200 200" className="w-full h-full">
+              <defs>
+                <linearGradient id="rocketGlowLogin" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#ffcf70" />
+                  <stop offset="100%" stopColor="#ff6bb2" />
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="70" fill="rgba(255,255,255,0.08)" />
+              <path d="M100 32c22 18 32 42 32 72 0 30-10 54-32 72-22-18-32-42-32-72 0-30 10-54 32-72z" fill="#f5f1ff" />
+              <circle cx="100" cy="92" r="16" fill="#3b1c6e" />
+              <circle cx="100" cy="92" r="8" fill="#7cd3ff" />
+              <path d="M70 132l-22 18c-6 4-8 10-6 16 8-4 18-6 28-4l8-30z" fill="#e7dcff" />
+              <path d="M130 132l22 18c6 4 8 10 6 16-8-4-18-6-28-4l-8-30z" fill="#e7dcff" />
+              <path className="rocket-flame" d="M92 150h16l-8 26z" fill="url(#rocketGlowLogin)" />
+              <circle className="rocket-spark" cx="88" cy="176" r="2.5" fill="#ffd37a" />
+              <circle className="rocket-spark" cx="112" cy="180" r="2" fill="#ff7ab8" />
+            </svg>
+          </div>
+          <div className="auth-code">
+            <span className="code-line">function solve(input) &#123;</span>
+            <span className="code-line delay-1">  return input === reverse(input);</span>
+            <span className="code-line delay-2">&#125;</span>
+          </div>
+          <div className="auth-motto">Practice daily. Learn deeply. Ship clean.</div>
+          <div>
+            <h3 className="text-xl font-semibold mb-2">Practice with focus</h3>
+            <p className="text-sm text-white/80">
+              Jump back into your AlgoHub journey and keep the streak alive.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-8 md:p-12">
+          <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
+          <p className="text-sm text-slate-500 mt-2">Log in to continue solving problems.</p>
 
           {error && (
-            <div className="alert alert-error mb-4">
+            <div className="alert alert-error mt-6">
               <span>{error}</span>
             </div>
           )}
 
-          
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-control"> 
-              <label className="label"> 
-                <span className="label-text">Email</span>
-              </label>
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-6">
+            <div>
+              <label className="auth-label">Email</label>
               <input
                 type="email"
                 placeholder="john@example.com"
-                className={`input input-bordered w-full ${errors.emailId ? 'input-error' : ''}`} 
+                className={`auth-input ${errors.emailId ? 'auth-input-error' : ''}`}
                 {...register('emailId')}
               />
               {errors.emailId && (
-                <span className="text-error text-sm mt-1">{errors.emailId.message}</span>
+                <span className="text-error text-sm mt-2 block">{errors.emailId.message}</span>
               )}
             </div>
 
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Password</span>
-              </label>
+            <div>
+              <label className="auth-label">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="********"
-                  className={`input input-bordered w-full pr-10 ${errors.password ? 'input-error' : ''}`}
+                  className={`auth-input pr-10 ${errors.password ? 'auth-input-error' : ''}`}
                   {...register('password')}
                 />
                 <button
                   type="button"
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-base-content/60 hover:text-base-content"
+                  className="absolute top-1/2 right-1 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -93,33 +124,26 @@ function Login() {
                 </button>
               </div>
               {errors.password && (
-                <span className="text-error text-sm mt-1">{errors.password.message}</span>
+                <span className="text-error text-sm mt-2 block">{errors.password.message}</span>
               )}
             </div>
 
-            <div className="form-control mt-8 flex justify-center">
+            <div className="flex items-center justify-between">
               <button
                 type="submit"
-                className={`btn btn-primary ${loading ? 'loading btn-disabled' : ''}`} 
+                className={`auth-btn ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 disabled={loading}
               >
-                {loading ? (
-                  <>
-                    <span className="loading loading-spinner"></span>
-                    Logging in...
-                  </>
-                ) : 'Login'}
+                {loading ? 'Logging in...' : 'Login'}
               </button>
+              <span className="text-sm text-slate-500">
+                New here?{' '}
+                <NavLink to="/signup" className="auth-link">
+                  Sign Up
+                </NavLink>
+              </span>
             </div>
           </form>
-          <div className="text-center mt-6">
-            <span className="text-sm">
-              Don't have an account?{' '} 
-              <NavLink to="/signup" className="link link-primary">
-                Sign Up
-              </NavLink>
-            </span>
-          </div>
         </div>
       </div>
     </div>
