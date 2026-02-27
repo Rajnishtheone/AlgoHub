@@ -442,9 +442,9 @@ const ProblemPage = () => {
         </div>
 
         {/* Right Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {activeRightTab === 'code' && (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Language Selector */}
               <div className="flex justify-between items-center p-4 border-b border-base-300">
                 <div className="flex gap-2">
@@ -461,7 +461,7 @@ const ProblemPage = () => {
               </div>
 
               {/* Monaco Editor */}
-              <div className="flex-1 min-h-[320px] h-[50vh] lg:h-auto">
+              <div className="flex-1 min-h-[320px]">
                 {markerError && (
                   <div className="alert alert-error mb-3 mx-4">
                     <span>{markerError}</span>
