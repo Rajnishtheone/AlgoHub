@@ -16,6 +16,7 @@ function UpdateProblem() {
     const [localVideoFile, setLocalVideoFile] = useState(null);
     const [videoSaving, setVideoSaving] = useState(false);
     const [existingVideo, setExistingVideo] = useState(null);
+    const availableTags = ['array', 'linkedList', 'graph', 'dp'];
     let { problemId } = useParams();
     const languages = ['C++', 'Java', 'JavaScript', 'Python'];
 
@@ -227,19 +228,19 @@ function UpdateProblem() {
                 <label className="label">
                   <span className="label-text">Tags</span>
                 </label>
-                <select
-                  {...register('tags')}
-                  multiple
-                  className={`select select-bordered h-32 ${errors.tags && 'select-error'}`}
-                >
-                  <option value="array">Array</option>
-                  <option value="linkedList">Linked List</option>
-                  <option value="graph">Graph</option>
-                  <option value="dp">DP</option>
-                </select>
-                <span className="text-xs text-base-content/60 mt-1">
-                  Hold Ctrl (Windows) or Cmd (Mac) to select multiple tags.
-                </span>
+                <div className={`grid grid-cols-2 gap-2 border rounded-lg p-3 ${errors.tags ? 'border-error' : 'border-base-300'}`}>
+                  {availableTags.map((tag) => (
+                    <label key={tag} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        value={tag}
+                        {...register('tags')}
+                        className="checkbox checkbox-primary checkbox-sm"
+                      />
+                      <span className="capitalize">{tag.replace('linkedList', 'linked list')}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             {errors.tags && (
