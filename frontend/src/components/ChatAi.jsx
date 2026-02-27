@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import axiosClient from "../utils/axiosClient";
 import { Send } from 'lucide-react';
+import MarkdownRenderer from "./MarkdownRenderer";
 
 function ChatAi({problem}) {
     const initialMessages = [
@@ -53,7 +54,8 @@ function ChatAi({problem}) {
                         className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}
                     >
                         <div className="chat-bubble bg-base-200 text-base-content">
-                            {msg.parts[0].text}
+                            <MarkdownRenderer content={msg.parts[0].text} />
+                            {/* {msg.parts[0].text} */}
                         </div>
                     </div>
                 ))}
