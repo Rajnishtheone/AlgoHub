@@ -175,7 +175,7 @@ function AdminPanel() {
               </label>
               <input
                 {...register('title')}
-                className={`input input-bordered ${errors.title && 'input-error'}`}
+                className={`input input-bordered  w-full ${errors.title && 'input-error'}`}
               />
               {errors.title && (
                 <span className="text-error">{errors.title.message}</span>
@@ -188,7 +188,7 @@ function AdminPanel() {
               </label>
               <textarea
                 {...register('description')}
-                className={`textarea textarea-bordered h-32 ${errors.description && 'textarea-error'}`}
+                className={`textarea textarea-bordered h-32 w-full ${errors.description && 'textarea-error'}`}
               />
               {errors.description && (
                 <span className="text-error">{errors.description.message}</span>

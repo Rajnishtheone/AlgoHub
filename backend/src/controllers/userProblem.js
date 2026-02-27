@@ -279,6 +279,71 @@ const submittedProblem = async(req,res)=>{
   }
 }
 
-module.exports = {createProblem,updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblembyUser,submittedProblem};
+const testProblemCode = async (req, res) => {
+  try{
+    const {language, code, visibleTestCases, hiddenTestCases} = req.body;
+
+    const languageId = getLanguageById(language);
+
+    const allTestCases = Object.asssign({},visibleTestCases,hiddenTestCases);
+
+    const submissions = allTestCases.map((testcase)=>({
+          source_code: code,
+          language_id: languageId,
+          stdin: testcase.input,
+          expected_output: testcase.output
+      }));
+
+
+    const submitResult = await submitBatch(submissions);
+    console.log(`Submit Result: ${submitResult}`);
+
+    const resultToken = submitResult.map((value)=> value.token);
+    const testResult = await submitToken(resultToken);
+
+    let testCasesPassed = 0;
+    let runtime = 0;
+    let memory = 0;
+    let status = true;
+    let errorMessage = null;
+    let failedTestcases = [];
+
+    for (const test of testResult) {
+      if (test.status_id==3) {
+        if(test.status_id==3){
+           testCasesPassed++;
+           runtime = runtime+parseFloat(test.time)
+           memory = Math.max(memory,test.memory);
+        }else{
+          if(test.status_id==4){
+            status = false
+            errorMessage = test.stderr
+            failedTestcases.push(test.stdin)
+          }
+          else{
+            status = false
+            errorMessage = test.stderr
+            failedTestcases.push(test.stdin)
+          }
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: status, 
+      testcases: testResult,
+      runtime: runtime,
+      memory: memory,
+      errorMessage: errorMessage,
+      failedTestcases: failedTestcases
+    })
+
+
+  } catch(err){
+    return res.status(500).send("Internal Server Error")
+  }
+}
+
+module.exports = {createProblem,updateProblem,deleteProblem,getProblemById,getAllProblem,solvedAllProblembyUser,submittedProblem, testProblemCode};
 
 
