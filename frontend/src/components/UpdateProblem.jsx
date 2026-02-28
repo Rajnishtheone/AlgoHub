@@ -356,7 +356,7 @@ function UpdateProblem() {
               <textarea
                 {...register('constraints')}
                 className="textarea textarea-bordered h-24"
-                placeholder="e.g., 1 ≤ n ≤ 10^5"
+                placeholder="e.g., 1 <= n <= 1e5"
               />
             </div>
 
@@ -657,3 +657,4 @@ function UpdateProblem() {
 }
 
 export default UpdateProblem;
+
